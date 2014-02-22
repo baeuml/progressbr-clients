@@ -69,7 +69,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-b', '--base-url', type=str, help='base url', default='http://localhost:8000')
+    parser.add_argument('-b', '--base-url', type=str, help='base url', default='http://progressbr.herokuapp.com')
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser_create = subparsers.add_parser('create', help='create new progress bar')
@@ -84,7 +84,12 @@ if __name__ == "__main__":
     parser_update.set_defaults(func=update_wrapper)
 
     args = parser.parse_args()
+
+    # update base url
     BASE_URL = BASE_URL % args.base_url
+    if not BASE_URL.startswith('http://'):
+        BASE_URL = 'http://' + BASE_URL
+
     args.func(args)
 
 
