@@ -24,6 +24,9 @@ def create(range_max=None, description=None):
         data['description'] = description
 
     r = requests.post(url, json.dumps(data), headers=headers)
+    logging.debug('response headers: %s', r.headers)
+    logging.debug('response content: %s', r.content)
+
     if r.status_code == 201:
         print r.json()['uuid']
     else:
