@@ -28,7 +28,7 @@ def create(range_max=None, description=None):
     logging.debug('response content: %s', r.content)
 
     if r.status_code == 201:
-        print r.json()['uuid']
+        print json.loads(r.content)['uuid']
     else:
         print r.content
 
