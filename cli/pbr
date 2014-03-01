@@ -10,7 +10,8 @@ import os
 
 BASE_URL = "%s/api"
 
-def create(range_max=None, description=None):
+
+def create(range_min=0, range_max=None, description=None, private_key=None):
     url = "%s/progress" % (BASE_URL)
     headers = {'Content-Type': 'application/json' }
 
@@ -18,7 +19,6 @@ def create(range_max=None, description=None):
         private_key = os.environ.get('PBR_PRIVATE_KEY', None)
     if private_key is not None:
         headers['Authorization'] = 'PBR %s' % private_key
-    range_min=None
 
     data = {}
     if range_min is not None:
@@ -38,14 +38,12 @@ def create(range_max=None, description=None):
         print r.content
 
 def create_wrapper(args):
-    create(args.range_max, description=args.description)
+    create(args.range_min, args.range_max, description=args.description)
 
 
 def update(uuid, n_min=None, n_max=None, description=None):
     url = "%s/progressupdate" % (BASE_URL)
     headers = {'Content-Type': 'application/json' }
-
-    range_min=None
 
     data = {
         'progress_id': uuid,
@@ -62,15 +60,7 @@ def update(uuid, n_min=None, n_max=None, description=None):
         print r.content
 
 def update_wrapper(args):
-
-    n_min = None
-    if len(args.range) == 1:
-        n_max = args.range[0]
-    else:
-        assert len(args.range) == 2
-        n_min, n_max = args.range[:]
-
-    update(args.uuid, n_min, n_max, description=args.description)
+    update(args.uuid, args.n_min, args.n_max, description=args.description)
 
 
 if __name__ == "__main__":
@@ -81,14 +71,17 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser_create = subparsers.add_parser('create', help='create new progress bar')
-    parser_create.add_argument('range_max', type=int)
     parser_create.add_argument('-d', '--description', type=str, help='description', default=None)
+    parser_create.add_argument('-k', '--private-key', type=str, help='private user key', default=None)
+    parser_create.add_argument('range_min',           type=int, nargs='?', help='range min')
+    parser_create.add_argument('range_max',           type=int,            help='range max')
     parser_create.set_defaults(func=create_wrapper)
 
     parser_update = subparsers.add_parser('update', help='update progress bar')
-    parser_update.add_argument('uuid', type=str, help='progress bar identifier')
-    parser_update.add_argument('range', type=int, nargs='+', help='update item')
     parser_update.add_argument('-d', '--description', type=str, help='description')
+    parser_update.add_argument('uuid',                type=str, help='progress bar identifier')
+    parser_update.add_argument('n_min',           type=int, nargs='?', help='update min')
+    parser_update.add_argument('n_max',           type=int,            help='update max')
     parser_update.set_defaults(func=update_wrapper)
 
     args = parser.parse_args()
