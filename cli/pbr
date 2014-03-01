@@ -6,6 +6,7 @@ import argparse
 import logging
 import json
 import requests
+import os
 
 BASE_URL = "%s/api"
 
@@ -13,6 +14,10 @@ def create(range_max=None, description=None):
     url = "%s/progress" % (BASE_URL)
     headers = {'Content-Type': 'application/json' }
 
+    if private_key is None:
+        private_key = os.environ.get('PBR_PRIVATE_KEY', None)
+    if private_key is not None:
+        headers['Authorization'] = 'PBR %s' % private_key
     range_min=None
 
     data = {}
