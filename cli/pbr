@@ -1,73 +1,36 @@
 #!/usr/bin/env python2
 """
-Client for the progressbr web service.
+Command line client for the progressbr web service.
 """
+from __future__ import print_function
+import sys
 import argparse
 import logging
-import json
-import requests
-import os
-
-BASE_URL = "%s/api"
+from pbr import ProgressbrClient, RESTException
 
 
-def create(range_min=0, range_max=None, description=None, private_key=None):
-    url = "%s/progress" % (BASE_URL)
-    headers = {'Content-Type': 'application/json' }
-
-    if private_key is None:
-        private_key = os.environ.get('PBR_PRIVATE_KEY', None)
-    if private_key is not None:
-        headers['Authorization'] = 'PBR %s' % private_key
-
-    data = {}
-    if range_min is not None:
-        data['range_min'] = range_min
-    if range_max is not None:
-        data['range_max'] = range_max
-    if description is not None:
-        data['description'] = description
-
-    r = requests.post(url, json.dumps(data), headers=headers)
-    logging.debug('response headers: %s', r.headers)
-    logging.debug('response content: %s', r.content)
-
-    if r.status_code == 201:
-        print json.loads(r.content)['uuid']
-    else:
-        print r.content
-
-def create_wrapper(args):
-    create(args.range_min, args.range_max, description=args.description)
+def create_wrapper(client, args):
+    try:
+        resp = client.create(args.range_min, args.range_max, description=args.description)
+        print(resp['uuid'])
+    except RESTException as e:
+        print("Request error, status code: %d" % e.status_code, file=sys.stderr)
+        print("Content:\n%s" % e.message, file=sys.stderr)
 
 
-def update(uuid, n_min=None, n_max=None, description=None):
-    url = "%s/progressupdate" % (BASE_URL)
-    headers = {'Content-Type': 'application/json' }
-
-    data = {
-        'progress_id': uuid,
-    }
-    if n_min is not None:
-        data['n_min'] = n_min
-    if n_max is not None:
-        data['n_max'] = n_max
-    if description is not None:
-        data['description'] = description
-
-    r = requests.post(url, json.dumps(data), headers=headers)
-    if r.status_code != 201:
-        print r.content
-
-def update_wrapper(args):
-    update(args.uuid, args.n_min, args.n_max, description=args.description)
+def update_wrapper(client, args):
+    try:
+        resp = client.update(args.uuid, args.n_min, args.n_max, description=args.description)
+    except RESTException as e:
+        print("Request error, status code %d" % e.status_code, file=sys.stderr)
+        print("Content:\n%s" % e.message, file=sys.stderr)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-b', '--base-url', type=str, help='base url', default='http://progressbr.herokuapp.com')
+    parser.add_argument('-b', '--base-url', type=str, help='base url', default='https://progressbr.herokuapp.com')
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser_create = subparsers.add_parser('create', help='create new progress bar')
@@ -85,12 +48,5 @@ if __name__ == "__main__":
     parser_update.set_defaults(func=update_wrapper)
 
     args = parser.parse_args()
-
-    # update base url
-    BASE_URL = BASE_URL % args.base_url
-    if not BASE_URL.startswith('http://'):
-        BASE_URL = 'http://' + BASE_URL
-
-    args.func(args)
-
-
+    client = ProgressbrClient(args.base_url)
+    args.func(client, args)
